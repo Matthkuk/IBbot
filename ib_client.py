@@ -32,8 +32,7 @@ class IBWrapper(EWrapper):
     #     print(reqId)
     # Get next order id we can use
     def nextValidId(self, nextOrderId: int):
-        global orderId
-        orderId = nextOrderId
+        self.bot.order_id = nextOrderId
 
 # Client
 class IBClient(EClient):

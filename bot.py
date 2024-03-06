@@ -32,7 +32,7 @@ class Bot():
     current_bar = Bar()
     bars = []
     reqId = 1
-    global orderId
+    order_id = 0
     sma_period = 50
     symbol = "AAPL"
     initial_bar_time = datetime.now().astimezone(pytz.timezone("America/New_York"))
