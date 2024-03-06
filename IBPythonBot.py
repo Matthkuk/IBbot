@@ -33,15 +33,15 @@ class IBWrapper(EWrapper):
             bot.on_bar_update(reqId, bar, False)
         except Exception as e:
             print(e)
-    # On realtime bar after historical data finishes
-    def historicalDataUpdate(self, reqId: int, bar: BarData):
-        try:
-            bot.on_bar_update(reqId, bar, True)
-        except Exception as e:
-            print(e)
-    # On Historical Data End
-    def historicalDataEnd(self, reqId: int, start: str, end: str):
-        print(reqId)
+    # # On realtime bar after historical data finishes
+    # def historicalDataUpdate(self, reqId: int, bar: BarData):
+    #     try:
+    #         bot.on_bar_update(reqId, bar, True)
+    #     except Exception as e:
+    #         print(e)
+    # # On Historical Data End
+    # def historicalDataEnd(self, reqId: int, start: str, end: str):
+    #     print(reqId)
     # Get next order id we can use
     def nextValidId(self, nextOrderId: int):
         global orderId
@@ -72,13 +72,13 @@ class Bar:
 # Bot
 class Bot():
     ib = None
-    bar_size = 1
+    bar_size = 5 # in minutes
     current_bar = Bar()
     bars = []
     reqId = 1
     global orderId
     sma_period = 50
-    symbol = ''
+    symbol = "AAPL"
     initial_bar_time = datetime.now().astimezone(pytz.timezone("America/New_York"))
     def __init__(self):
         self.ib = IBClient()
@@ -88,13 +88,13 @@ class Bot():
         ib_thread.start()
         # Pause to let logs finish for input
         time.sleep(1)
-        self.symbol = input("Enter the symbol you want to trade: ")
+        # self.symbol = input("Enter the symbol you want to trade: ")
         # Get bar size
-        self.bar_size = input("Enter the barsize you want to trade in minutes: ")
-        mintext = " min"
+        # self.bar_size = input("Enter the barsize you want to trade in minutes: ")
+        # mintext = " min"
         if (int(self.bar_size) > 1):
             mintext = " mins"
-        query_time = (datetime.now().astimezone(pytz.timezone("America/New_York")) - timedelta(days=1)).replace(hour=16, minute=0, second=0, microsecond=0).strftime("%Y%m%d %H:%M:%S")
+        # query_time = (datetime.now().astimezone(pytz.timezone("America/New_York")) - timedelta(days=1)).replace(hour=16, minute=0, second=0, microsecond=0).strftime("%Y%m%d %H:%M:%S")
         # Create contract (subscription)
         contract = Contract()
         contract.symbol = self.symbol.upper()
@@ -171,9 +171,11 @@ class Bot():
     
     # Pass realtime bar data back to bot
     def on_bar_update(self, reqId, bar, realtime):
+        # print('hihi')
         # Historical data to catch up
         if (realtime == False):
             self.bars.append(bar)
+            print(bar, type(bar))
         else:
             bartime = datetime.strptime(bar.date, "%Y%m%d %H:%M:%S").astimezone(pytz.timezone("America/New_York"))
             minutes_diff = (bartime - self.initial_bar_time).total_seconds() / 60
@@ -227,6 +229,7 @@ class Bot():
                 self.current_bar.high = bar.high
             if (self.current_bar.low == 0 or bar.low < self.current_bar.high):
                 self.current_bar.low = bar.low
+        # print('FLASHING:', self.bars[0])
 
 
 
