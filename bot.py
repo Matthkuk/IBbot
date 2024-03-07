@@ -42,10 +42,14 @@ class Bot():
 
         # Connect is causing the terminal freeze
         self.ib.connect("127.0.0.1", 7496, 1)
-        ib_thread = threading.Thread(target=self.run_ib_client, daemon=True)
+        ib_thread = threading.Thread(target=self.ib.run, daemon=True)
         ib_thread.start()
-        # Pause to let logs finish for input
-        time.sleep(1)
+        while(self.ib.next_valid_order_id == None):
+            print("Waiting for TWS connection acknowledgement ...")
+
+        print("Connection Established")
+        # # Pause to let logs finish for input
+        # time.sleep(1)
         # self.symbol = input("Enter the symbol you want to trade: ")
         # Get bar size
         # self.bar_size = input("Enter the barsize you want to trade in minutes: ")
@@ -86,10 +90,6 @@ class Bot():
     
     def request_real_time_bars(self, contract):
         self.ib.reqRealTimeBars(0, contract, 5, "TRADES", 1, [])
-
-    def run_ib_client(self):
-        # self.ib.connect("127.0.0.1", 7496, 1)
-        self.ib.run()
 
     # Bracket order setup
     def bracket_order(self, parent_order_id, action, quantity, profit_target, stop_loss):
