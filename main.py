@@ -1,3 +1,6 @@
 from bot import Bot
+import contracts
 
-bot = Bot()
+contract = contracts.create_contract("AAPL")
+
+bot = Bot(contract)

@@ -36,7 +36,7 @@ class Bot():
     sma_period = 50
     symbol = "AAPL"
     initial_bar_time = datetime.now().astimezone(pytz.timezone("America/New_York"))
-    def __init__(self):
+    def __init__(self, contract: Contract):
 
         self.ib = IBClient(self) # pass in instance of Bot()
 
@@ -48,21 +48,15 @@ class Bot():
             print("Waiting for TWS connection acknowledgement ...")
 
         print("Connection Established")
-        # # Pause to let logs finish for input
-        # time.sleep(1)
-        # self.symbol = input("Enter the symbol you want to trade: ")
-        # Get bar size
-        # self.bar_size = input("Enter the barsize you want to trade in minutes: ")
-        # mintext = " min"
         if (int(self.bar_size) > 1):
             mintext = " mins"
         # query_time = (datetime.now().astimezone(pytz.timezone("America/New_York")) - timedelta(days=1)).replace(hour=16, minute=0, second=0, microsecond=0).strftime("%Y%m%d %H:%M:%S")
         # Create contract (subscription)
-        contract = Contract()
-        contract.symbol = self.symbol.upper()
-        contract.secType = "STK"
-        contract.exchange = "SMART"
-        contract.currency = "USD"
+        # contract = Contract()
+        # contract.symbol = self.symbol.upper()
+        # contract.secType = "STK"
+        # contract.exchange = "SMART"
+        # contract.currency = "USD"
         self.ib.reqIds(-1)
         # Request real-time market data
         # self.run_ib_client()
