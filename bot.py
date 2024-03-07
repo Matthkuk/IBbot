@@ -36,7 +36,7 @@ class Bot():
     sma_period = 50
     symbol = "AAPL"
     initial_bar_time = datetime.now().astimezone(pytz.timezone("America/New_York"))
-    def __init__(self, contract: Contract):
+    def __init__(self, contract: Contract, historical_data):
 
         self.ib = IBClient(self) # pass in instance of Bot()
 
@@ -51,19 +51,8 @@ class Bot():
         if (int(self.bar_size) > 1):
             mintext = " mins"
         # query_time = (datetime.now().astimezone(pytz.timezone("America/New_York")) - timedelta(days=1)).replace(hour=16, minute=0, second=0, microsecond=0).strftime("%Y%m%d %H:%M:%S")
-        # Create contract (subscription)
-        # contract = Contract()
-        # contract.symbol = self.symbol.upper()
-        # contract.secType = "STK"
-        # contract.exchange = "SMART"
-        # contract.currency = "USD"
         self.ib.reqIds(-1)
-        # Request real-time market data
-        # self.run_ib_client()
-        # bars_thread = threading.Thread(target=self.request_real_time_bars, args=(contract,), daemon=True)
-        # bars_thread.start()
-        # self.ib.reqRealTimeBars(0, contract, 5, "TRADES", 1, [])
-        self.ib.reqHistoricalData(self.reqId, contract, "", "2 D", str(self.bar_size) + mintext, "TRADES", 1, 1, True, [])
+        self.ib.reqHistoricalData(*historical_data)
         # # Create order object
         # order = Order()
         # order.orderType = "MKT"

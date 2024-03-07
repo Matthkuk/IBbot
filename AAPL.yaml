@@ -1,0 +1,16 @@
+historical_data:
+  reqId: 1
+  endDateTime: ''
+  durationStr: '2 D'
+  barSizeSetting: '5 mins'
+  whatToShow: 'TRADES'
+  useRTH: 1
+  formatDate: 1
+  keepUpToDate: True
+  chartOptions: []
+
+contract:
+  symbol: "AAPL"
+  secType: "STK"
+  exchange: "SMART"
+  currency: "USD"

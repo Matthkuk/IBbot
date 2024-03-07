@@ -1,6 +1,6 @@
 from bot import Bot
-import contracts
+import configs
 
-contract = contracts.create_contract("AAPL")
+contract, historical_data_params = configs.bot_config()
 
-bot = Bot(contract)
+bot = Bot(contract, historical_data_params)
