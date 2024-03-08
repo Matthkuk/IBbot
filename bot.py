@@ -9,6 +9,7 @@ import pandas as pd
 import ta
 from ibapi.contract import Contract
 from ibapi.order import Order
+import strategy
 
 #Bar Object
 class Bar:
@@ -70,9 +71,6 @@ class Bot():
         # contract.currency = "USD"
         # # Place the order
         # self.ib.placeOrder(1, contract, order)
-    
-    def request_real_time_bars(self, contract):
-        self.ib.reqRealTimeBars(0, contract, 5, "TRADES", 1, [])
 
     # Bracket order setup
     def bracket_order(self, parent_order_id, action, quantity, profit_target, stop_loss):
@@ -171,11 +169,7 @@ class Bot():
             if (self.current_bar.low == 0 or bar.low < self.current_bar.high):
                 self.current_bar.low = bar.low
         # print('FLASHING:', self.bars[0])
-
-
-
-    def exit_program(self):
-        print("Exiting program...")
-        self.ib.disconnect()
+        # df = strategy.create_dataframe(self.bars)
+        # print(df)
 
 # bot = Bot()
