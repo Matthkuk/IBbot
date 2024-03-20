@@ -49,8 +49,8 @@ class Bot():
             print("Waiting for TWS connection acknowledgement ...")
 
         print("Connection Established")
-        if (int(self.bar_size) > 1):
-            mintext = " mins"
+        # if (int(self.bar_size) > 1):
+        #     mintext = " mins"
         # query_time = (datetime.now().astimezone(pytz.timezone("America/New_York")) - timedelta(days=1)).replace(hour=16, minute=0, second=0, microsecond=0).strftime("%Y%m%d %H:%M:%S")
         self.ib.reqIds(-1)
         self.ib.reqHistoricalData(*historical_data)
@@ -118,9 +118,20 @@ class Bot():
         else:
             bartime = datetime.strptime(bar.date, "%Y%m%d %H:%M:%S").astimezone(pytz.timezone("America/New_York"))
             minutes_diff = (bartime - self.initial_bar_time).total_seconds() / 60
+            # Update current bar with closing time of bar
             self.current_bar.date = bartime
             # On Bar Close
             if (minutes_diff > 0 and math.floor(minutes_diff) % self.bar_size == 0):
+                # Append the closed bar and initiate the open price of the new bar
+                self.current_bar.close = bar.close
+                if (self.current_bar.date != last_bar.date):
+                    print("New bar!")
+                    self.bars.append(self.current_bar)
+                # Reset the fields of bar other than close and date
+                self.current_bar.open = bar.open
+                self.current_bar.high = bar.open
+                self.current_bar.low = bar.open
+                self.current_bar.volume = 0
                 # Entry - if we have a higher high, a higher low and we cross the 50 SMA - Buy
                 # Calc SMA
                 closes = []
@@ -155,12 +166,6 @@ class Bot():
                         order.ocaType = 2
                         self.ib.placeOrder(order.orderId, contract, order)
                     orderId = orderId + 3
-                # Bar closed append
-                self.current_bar.close = bar.close
-                if (self.current_bar.date != last_bar.date):
-                    print("New bar!")
-                    self.bars.append(self.current_bar)
-                self.current_bar.open = bar.open
             # Build realtime bar
             if (self.current_bar.open == 0):
                 self.current_bar.open = bar.open
