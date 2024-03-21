@@ -9,6 +9,7 @@ import pandas as pd
 import ta
 from ibapi.contract import Contract
 from ibapi.order import Order
+from ibapi.common import BarData
 import strategy
 
 #Bar Object
@@ -30,7 +31,7 @@ class Bar:
 class Bot():
     ib = None
     bar_size = 5 # in minutes
-    current_bar = Bar()
+    current_bar = BarData()
     bars = []
     reqId = 1
     order_id = 0
@@ -109,70 +110,100 @@ class Bot():
 
     
     # Pass realtime bar data back to bot
-    def on_bar_update(self, reqId, bar, realtime):
+    def on_bar_update(self, reqId, bar: BarData, realtime):
         # STRIP THIS IN THE FUTURE TO ANOTHER FILE TO HAVE MULTIPLE STRATEGIES
-        # Historical data to catch up
-        if (realtime == False):
+        if not self.current_bar:
+            # Initialize a new bar if there's no current bar
+            self.current_bar = BarData()
+
+        if not realtime:
+            # Historical data - simply append to the bars list
             self.bars.append(bar)
-            print(bar, type(bar))
-        else:
-            bartime = datetime.strptime(bar.date, "%Y%m%d %H:%M:%S").astimezone(pytz.timezone("America/New_York"))
-            minutes_diff = (bartime - self.initial_bar_time).total_seconds() / 60
-            # Update current bar with closing time of bar
-            self.current_bar.date = bartime
-            # On Bar Close
-            if (minutes_diff > 0 and math.floor(minutes_diff) % self.bar_size == 0):
-                # Append the closed bar and initiate the open price of the new bar
-                self.current_bar.close = bar.close
-                if (self.current_bar.date != last_bar.date):
-                    print("New bar!")
-                    self.bars.append(self.current_bar)
-                # Reset the fields of bar other than close and date
-                self.current_bar.open = bar.open
-                self.current_bar.high = bar.open
-                self.current_bar.low = bar.open
-                self.current_bar.volume = 0
-                # Entry - if we have a higher high, a higher low and we cross the 50 SMA - Buy
-                # Calc SMA
-                closes = []
-                for bar in self.bars:
-                    closes.append(bar.close)
-                self.close_array = pd.Series(np.asarray(closes))
-                self.sma = ta.trend.sma(self.close_array, self.sma_period, True)
-                print("SMA :" + str(self.sma[len(self.sma) - 1]))
-                # Calc higher highs and lows
-                last_low = self.bars[len(self.bars) - 1].low
-                last_high = self.bars[len(self.bars) - 1].high
-                last_close = self.bars[len(self.bars) - 1].close
-                last_bar = self.bars[len(self.bars) - 1]
-                # Check Criteria
-                if (bar.close > last_high 
-                    and self.current_bar.low > last_low 
-                    and bar.close > str(self.sma[len(self.sma) - 1])
-                    and last_close < str(self.sma[len(self.sma) - 2])):
-                    profit_target = bar.close * 1.02
-                    stop_loss = bar.close * 0.99
-                    quantity = 1
-                    bracket = self.bracket_order(orderId, "BUY", quantity, profit_target, stop_loss)
-                    # Place bracket order
-                    contract = Contract()
-                    contract.symbol = self.symbol.upper()
-                    contract.secType = "STK" # or FUT for futures etc
-                    contract.exchange = "SMART"
-                    contract.primaryExchange = "ISLAND" # ISLAND is a way of routing exchanges through the NASDAQ
-                    contract.currency = "USD"
-                    for order in bracket:
-                        order.ocaGroup = "OCA_" + str(orderId)
-                        order.ocaType = 2
-                        self.ib.placeOrder(order.orderId, contract, order)
-                    orderId = orderId + 3
-            # Build realtime bar
-            if (self.current_bar.open == 0):
-                self.current_bar.open = bar.open
-            if (self.current_bar.high == 0 or bar.high > self.current_bar.high):
-                self.current_bar.high = bar.high
-            if (self.current_bar.low == 0 or bar.low < self.current_bar.high):
-                self.current_bar.low = bar.low
+            # return
+        
+        self.initial_bar_time = datetime.now(pytz.timezone("America/New_York"))
+
+        # Check if the last bar in historical data is complete or incomplete
+        if len(self.bars) >= 1:
+            last_bar = self.bars[-1]
+
+            last_bartime = datetime.strptime(last_bar.date, "%Y%m%d %H:%M:%S").astimezone(pytz.timezone("America/New_York"))
+
+            time_diff = (self.initial_bar_time - last_bartime).total_seconds() / 60
+
+            if time_diff >= self.bar_size:
+                print(f"Last historical bar is complete: {time_diff}")
+                self.current_bar = BarData()
+            else:
+                print(f"Last historical bar is incomplete: {time_diff}")
+                # Enter last entry for modification
+                self.current_bar = last_bar
+                # Remove last entry
+                self.bars = self.bars[:-1]
+
+        # bartime = datetime.strptime(bar.date, "%Y%m%d %H:%M:%S").astimezone(pytz.timezone("America/New_York"))
+        # minutes_diff = (bartime - self.initial_bar_time).total_seconds() / 60
+
+        # if minutes_diff > 0 and math.floor(minutes_diff) % self.bar_size == 0:
+        #     # Current bar is complete
+        #     self.current_bar.close = bar.close
+        #     self.bars.append(self.current_bar)  # Add the completed bar to the list of bars
+
+        #     # Start a new bar
+        #     self.current_bar = BarData(date=bartime, open=bar.open, high=bar.open, low=bar.open, volume=0)
+        # else:
+        #     # Update current incomplete bar with latest data
+        #     self.current_bar.high = max(self.current_bar.high, bar.high)
+        #     self.current_bar.low = min(self.current_bar.low, bar.low)
+        #     self.current_bar.volume += bar.volume
+
+
+
+        # # Update current bar with closing time of bar
+        # self.current_bar.date = bartime
+        # # On Bar Close
+        # if (minutes_diff > 0 and math.floor(minutes_diff) % self.bar_size == 0):
+        #     # Append the closed bar and initiate the open price of the new bar
+        #     self.current_bar.close = bar.close
+        #     if (self.current_bar.date != last_bar.date):
+        #         print("New bar!")
+        #         self.bars.append(self.current_bar)
+        #     # Reset the fields of bar other than close and date
+        #     self.current_bar.open = bar.open
+        #     self.current_bar.high = bar.open
+        #     self.current_bar.low = bar.open
+        #     self.current_bar.volume = 0
+        #     # Create Criteria
+        #     signals = strategy.simple_trading_strategy(self.bars)
+        #     # Check Criteria
+        #     if (bar.close > last_high 
+        #         and self.current_bar.low > last_low 
+        #         and bar.close > str(self.sma[len(self.sma) - 1])
+        #         and last_close < str(self.sma[len(self.sma) - 2])):
+        #         # Create bracket order
+        #         profit_target = bar.close * 1.02
+        #         stop_loss = bar.close * 0.99
+        #         quantity = 1
+        #         bracket = self.bracket_order(orderId, "BUY", quantity, profit_target, stop_loss)
+        #         # Place bracket order
+        #         contract = Contract()
+        #         contract.symbol = self.symbol.upper()
+        #         contract.secType = "STK" # or FUT for futures etc
+        #         contract.exchange = "SMART"
+        #         contract.primaryExchange = "ISLAND" # ISLAND is a way of routing exchanges through the NASDAQ
+        #         contract.currency = "USD"
+        #         for order in bracket:
+        #             order.ocaGroup = "OCA_" + str(orderId)
+        #             order.ocaType = 2
+        #             self.ib.placeOrder(order.orderId, contract, order)
+        #         orderId = orderId + 3
+        # # Build realtime bar
+        # if (self.current_bar.open == 0):
+        #     self.current_bar.open = bar.open
+        # if (self.current_bar.high == 0 or bar.high > self.current_bar.high):
+        #     self.current_bar.high = bar.high
+        # if (self.current_bar.low == 0 or bar.low < self.current_bar.high):
+        #     self.current_bar.low = bar.low
         # print('FLASHING:', self.bars[0])
         # df = strategy.create_dataframe(self.bars)
         # print(df)
