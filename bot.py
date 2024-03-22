@@ -31,7 +31,7 @@ class Bar:
 class Bot():
     ib = None
     bar_size = 5 # in minutes
-    current_bar = BarData()
+    current_bar = None # On initialisation current_bar should not exist
     bars = []
     reqId = 1
     order_id = 0
@@ -112,10 +112,6 @@ class Bot():
     # Pass realtime bar data back to bot
     def on_bar_update(self, reqId, bar: BarData, realtime):
         # STRIP THIS IN THE FUTURE TO ANOTHER FILE TO HAVE MULTIPLE STRATEGIES
-        if not self.current_bar:
-            # Initialize a new bar if there's no current bar
-            self.current_bar = BarData()
-
         if not realtime:
             # Historical data - simply append to the bars list
             self.bars.append(bar)
@@ -123,7 +119,7 @@ class Bot():
         
         self.initial_bar_time = datetime.now(pytz.timezone("America/New_York"))
 
-        # Check if the last bar in historical data is complete or incomplete
+        # Check if the last bar in bars is complete or incomplete
         if len(self.bars) >= 1:
             last_bar = self.bars[-1]
 
@@ -132,14 +128,27 @@ class Bot():
             time_diff = (self.initial_bar_time - last_bartime).total_seconds() / 60
 
             if time_diff >= self.bar_size:
-                print(f"Last historical bar is complete: {time_diff}")
-                self.current_bar = BarData()
+                print(f"Last bar is beyond the bar size (complete or current_bar is now closed): {time_diff}")
+                # On initialisation if last bar is complete just pass, else when current time is beyond the bar_size add the current_bar to the end and reset bar
+                if self.current_bar:
+                    print("Appending bar and resetting bar")
+                    self.bars.append(self.current_bar)
+                    self.current_bar = BarData()
             else:
-                print(f"Last historical bar is incomplete: {time_diff}")
-                # Enter last entry for modification
-                self.current_bar = last_bar
-                # Remove last entry
-                self.bars = self.bars[:-1]
+                print(f"Last bar is within the bar size (incomplete or current bar is still open): {time_diff}")
+                # On initialisation if last bar is incomplete remove last bar and modify it, else if current_bar is still open modify the current_bar
+                if not self.current_bar: # if not self.current_bar means it is on initialisation
+                    print("Last bar incomplete on initialisation")
+                    self.current_bar = last_bar
+                    self.bars = self.bars[:-1]
+                else:
+                    print("Updating bar")
+                    self.current_bar.barCount += 1
+                    self.current_bar.volume += bar.volume
+                    self.current_bar.high = max(self.current_bar.high, bar.high)
+                    self.current_bar.low = min(self.current_bar.low, bar.low)
+                    self.current_bar.close = bar.close
+
 
         # bartime = datetime.strptime(bar.date, "%Y%m%d %H:%M:%S").astimezone(pytz.timezone("America/New_York"))
         # minutes_diff = (bartime - self.initial_bar_time).total_seconds() / 60
